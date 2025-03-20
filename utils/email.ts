@@ -25,3 +25,14 @@ export const sendVerificationEmail = async (email: string, token: string) => {
     console.error("Error sending verification email:", error);
   }
 };
+
+export const sendResetEmail = async (email: string, resetLink: string) => {
+  const mailOptions = {
+    from: process.env.EMAIL,
+    to: email,
+    subject: "Password Reset Request",
+    html: `<p>You requested a password reset. Click <a href="${resetLink}">here</a> to reset your password.</p>`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-// import jwt from "jsonwebtoken";
 import { jwtVerify } from "jose";
 import sendResponse from "./lib";
 
@@ -19,7 +18,6 @@ export const middleware = async (request: NextRequest) => {
       actualToken,
       new TextEncoder().encode(secretKey)
     );
-    console.log("Token verified", payload.userId);
 
     const response = NextResponse.next();
 
