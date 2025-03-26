@@ -2,44 +2,59 @@ import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import sendResponse from "./lib";
 
-export const middleware = async (request: NextRequest) => {
-  const token = request.headers.get("Authorization");
-  if (!token) {
-    return sendResponse(401, {
-      success: false,
-      errorMessage: "UnAuthorized",
-    });
+const protectedRoutes = ["/dashboard"];
+const authRoutes = ["/sign-in", "/sign-up"];
+
+export default async function middleware(req: NextRequest) {
+
+  const path = req.nextUrl.pathname;
+  const token = req.cookies.get("token")?.value;
+
+  const isAuthenticated = !!token;
+
+  if (protectedRoutes.includes(path) && !isAuthenticated) {
+    return NextResponse.redirect(new URL("/sign-in", req.url));
   }
 
-  try {
-    const actualToken = token.replace("Bearer ", "");
-    const secretKey = process.env.JWT_SECRET || "";
-    const { payload } = await jwtVerify(
-      actualToken,
-      new TextEncoder().encode(secretKey)
-    );
-
-    const response = NextResponse.next();
-
-    response.headers.set("userId", (payload as { userId: string }).userId);
-    return response;
-  } catch (error) {
-    return sendResponse(401, {
-      success: false,
-      errorMessage: "Unauthorized: Invalid or expired token",
-    });
+  if (isAuthenticated && authRoutes.includes(path)) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
   }
-};
+
+  if (isAuthenticated && token) {
+    if (!token) {
+      return sendResponse(401, {
+        success: false,
+        errorMessage: "UnAuthorized",
+      });
+    }
+
+    try {
+      const secretKey = process.env.JWT_SECRET || "";
+      const { payload } = await jwtVerify(
+        token,
+        new TextEncoder().encode(secretKey)
+      );
+
+      const response = NextResponse.next();
+      response.headers.set("userId", (payload as { userId: string }).userId);
+
+      return response;
+    } catch (error) {
+      const response = NextResponse.next();
+      console.error("JWT Verification Error:", error);
+      response.cookies.delete("token");
+      return response
+      // return NextResponse.redirect(new URL("/sign-in", req.url));
+      // return sendResponse(401, {
+      //   success: false,
+      //   errorMessage: "Unauthorized: Invalid or expired token",
+      // });
+    }
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: ["/(api/health)"],
+  matcher: ["/(api/health)", "/dashboard", "/sign-in", "/sign-up"],
 };
-
-// export const config = {
-//   matcher: [
-//     // Skip Next.js internals and all static files, unless found in search params
-//     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-//     // Always run for API routes
-//     "/(api|trpc)(.*)",
-//   ],
-// };

@@ -28,7 +28,7 @@ export const POST = async (request: NextRequest) => {
     user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
     await user.save();
 
-    const resetLink = `http://localhost:3000/api/auth/reset-password/${resetToken}`;
+    const resetLink = `http://localhost:3000/reset-password/${resetToken}`;
     await sendResetEmail(user.email, resetLink);
 
     return sendResponse(200, {

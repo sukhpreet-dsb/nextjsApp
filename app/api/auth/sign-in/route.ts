@@ -72,6 +72,14 @@ export const POST = async (request: NextRequest) => {
       data: { token, user, refreshToken },
     });
 
+    response.cookies.set("token", token, {
+      httpOnly: true,
+      secure: false,
+      // secure: process.env.NODE_ENV === "production", // Set to true in production
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: "/", // Set the cookie path
+    });
+
     response.cookies.set("refreshtoken", refreshToken, {
       httpOnly: true,
       secure: false,
